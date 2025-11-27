@@ -320,7 +320,7 @@ export function LabOverlay() {
                         type="color"
                         value={color}
                         onChange={(e) => updatePaletteColor(index, e.target.value)}
-                        className="w-full aspect-square border-2 border-[#f27200] cursor-pointer p-0"
+                        className="w-full h-auto aspect-square border-2 border-[#f27200] cursor-pointer p-0 appearance-none rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none"
                       />
                     ))}
                   </div>
