@@ -2,6 +2,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useRef, useEffect, useState, useMemo } from 'react'
 import * as THREE from 'three'
 import { useStore } from '../store'
+import { MapControls, OrthographicCamera } from '@react-three/drei'
 
 const vertexShader = `
 varying vec2 vUv;
@@ -24,7 +25,6 @@ uniform float uVibrance;
 uniform int uColorMode;
 uniform float uTintHue;
 uniform vec3 uPalette[4];
-uniform vec2 uResolution;
 uniform vec2 uImageResolution;
 uniform bool uHasImage;
 uniform float uTime;
@@ -89,7 +89,7 @@ float random(vec2 st) {
 // Improved Halftone Patterns
 float halftoneDot(vec2 uv, float angle, float scale) {
   float s = sin(angle), c = cos(angle);
-  vec2 tex = uv * uResolution * scale; // Scale determines dot density
+  vec2 tex = uv * uImageResolution * scale; // Use Image Resolution
   vec2 point = vec2(
     c * tex.x - s * tex.y,
     s * tex.x + c * tex.y
@@ -107,7 +107,7 @@ float halftoneDot(vec2 uv, float angle, float scale) {
 
 float halftoneLine(vec2 uv, float angle, float scale) {
   float s = sin(angle), c = cos(angle);
-  vec2 tex = uv * uResolution * scale;
+  vec2 tex = uv * uImageResolution * scale;
   vec2 point = vec2(
     c * tex.x - s * tex.y,
     s * tex.x + c * tex.y
@@ -232,18 +232,8 @@ void main() {
     return;
   }
 
-  vec2 ratio = uImageResolution / uResolution;
-  float maxRatio = max(ratio.x, ratio.y);
-  vec2 scale = ratio / maxRatio;
-  vec2 uvContain = (vUv - 0.5) / scale + 0.5;
-  
-  // Add epsilon to avoid edge artifacts
-  if (uvContain.x < 0.001 || uvContain.x > 0.999 || uvContain.y < 0.001 || uvContain.y > 0.999) {
-    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    return;
-  }
-
-  vec2 uv = uvContain;
+  // Use vUv directly - geometry handles aspect ratio
+  vec2 uv = vUv;
   
   // 1. Sample Texture
   vec3 color = texture2D(uTexture, uv).rgb;
@@ -279,7 +269,7 @@ void main() {
 `
 
 function ScreenQuad() {
-  const { viewport, size, gl, scene, camera } = useThree()
+  const { gl, scene } = useThree()
   const imageURL = useStore((state) => state.imageURL)
   const ditherStrength = useStore((state) => state.ditherStrength)
   const ditherScale = useStore((state) => state.ditherScale)
@@ -297,6 +287,8 @@ function ScreenQuad() {
   
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const materialRef = useRef<THREE.ShaderMaterial>(null)
+  const exportCameraRef = useRef<THREE.OrthographicCamera>(null)
+  const controlsRef = useRef<any>(null)
 
   useEffect(() => {
     if (!imageURL) {
@@ -314,6 +306,11 @@ function ScreenQuad() {
         loadedTexture.wrapT = THREE.ClampToEdgeWrapping
         loadedTexture.needsUpdate = true
         setTexture(loadedTexture)
+        
+        // Reset controls when new image loads
+        if (controlsRef.current) {
+          controlsRef.current.reset()
+        }
       }
     })
     return () => { isMounted = false }
@@ -339,7 +336,6 @@ function ScreenQuad() {
     uColorMode: { value: 0 },
     uTintHue: { value: 20.0 },
     uPalette: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
-    uResolution: { value: new THREE.Vector2(size.width, size.height) },
     uImageResolution: { value: new THREE.Vector2(1, 1) },
     uHasImage: { value: false },
     uTime: { value: 0 }
@@ -364,42 +360,34 @@ function ScreenQuad() {
       materialRef.current.uniforms.uDitherAlgorithm.value = ditherAlgorithm
       
       // MAPPING 0-200 to Shader Values
-      // Brightness: 100 -> 0. Range -0.5 to 0.5
       materialRef.current.uniforms.uBrightness.value = (brightness - 100) / 100.0 * 0.5
-      
-      // Contrast: 100 -> 1.0. Range 0.0 to 2.0
       materialRef.current.uniforms.uContrast.value = contrast / 100.0
-      
-      // Saturation: 100 -> 1.0. Range 0.0 to 2.0
       materialRef.current.uniforms.uSaturation.value = saturation / 100.0
-      
-      // Gamma: 100 -> 1.0. Range 0.01 to 2.0 (avoid 0)
       materialRef.current.uniforms.uGamma.value = Math.max(0.01, gamma / 100.0)
-      
-      // Vibrance: 100 -> 0.0. Range -1.0 to 1.0
       materialRef.current.uniforms.uVibrance.value = (vibrance - 100) / 100.0
       
       materialRef.current.uniforms.uColorMode.value = colorMode
       materialRef.current.uniforms.uTintHue.value = tintHue
       materialRef.current.uniforms.uPalette.value = paletteUniform
-      
-      if (isExporting && texture && texture.image) {
-        const img = texture.image as HTMLImageElement
-        materialRef.current.uniforms.uResolution.value.set(img.width, img.height)
-      } else {
-        materialRef.current.uniforms.uResolution.value.set(size.width, size.height)
-      }
     }
 
-    if (isExporting && texture && texture.image) {
+    if (isExporting && texture && texture.image && exportCameraRef.current) {
       const img = texture.image as HTMLImageElement
       const originalWidth = img.width
       const originalHeight = img.height
-      const currentWidth = size.width
-      const currentHeight = size.height
+      const currentWidth = state.size.width
+      const currentHeight = state.size.height
+      
+      // Configure export camera to match image dimensions exactly
+      const cam = exportCameraRef.current
+      cam.left = -originalWidth / 2
+      cam.right = originalWidth / 2
+      cam.top = originalHeight / 2
+      cam.bottom = -originalHeight / 2
+      cam.updateProjectionMatrix()
       
       gl.setSize(originalWidth, originalHeight, false)
-      gl.render(scene, camera)
+      gl.render(scene, cam) // Render using the export camera
       
       try {
         const dataURL = gl.domElement.toDataURL('image/png', 1.0)
@@ -424,27 +412,57 @@ function ScreenQuad() {
     }
   })
 
+  // Calculate mesh size based on image dimensions
+  const meshWidth = (texture?.image as HTMLImageElement)?.width || 1
+  const meshHeight = (texture?.image as HTMLImageElement)?.height || 1
+
   return (
-    <mesh scale={[viewport.width, viewport.height, 1]}>
-      <planeGeometry args={[1, 1]} />
-      <shaderMaterial
-        ref={materialRef}
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        uniforms={uniforms}
+    <>
+      <OrthographicCamera 
+        makeDefault 
+        position={[0, 0, 10]} 
+        zoom={1}
+        near={0.1}
+        far={1000}
       />
-    </mesh>
+      
+      <OrthographicCamera
+        ref={exportCameraRef}
+        position={[0, 0, 10]}
+        zoom={1}
+        near={0.1}
+        far={1000}
+      />
+
+      <MapControls 
+        ref={controlsRef}
+        enableRotate={false} 
+        enableDamping={false}
+        screenSpacePanning={true}
+        minZoom={0.1}
+        maxZoom={10}
+      />
+
+      <mesh scale={[meshWidth, meshHeight, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <shaderMaterial
+          ref={materialRef}
+          vertexShader={vertexShader}
+          fragmentShader={fragmentShader}
+          uniforms={uniforms}
+        />
+      </mesh>
+    </>
   )
 }
 
 export function Stage() {
   return (
-    <div className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-none">
-      <div className="relative w-full h-full pointer-events-auto">
+    <div className="absolute inset-0 w-full h-full flex">
+      <div className="relative w-full h-full">
         <Canvas
           gl={{ preserveDrawingBuffer: true, antialias: false }}
           dpr={[1, 1]}
-          camera={{ position: [0, 0, 1], fov: 75 }}
         >
           <ScreenQuad />
         </Canvas>
