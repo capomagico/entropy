@@ -92,7 +92,15 @@ function ScreenQuad() {
   const isExporting = useStore((state) => state.isExporting)
   const setIsExporting = useStore((state) => state.setIsExporting)
   
-  const texture = useTexture(imageURL || '/entropy-icon.png')
+  // Construct correct path for GitHub Pages (base: './')
+  // If base is './', import.meta.env.BASE_URL is './'
+  // We need to ensure we don't end up with // or bad paths.
+  // Safest is to just use the relative filename if we are sure we are at the root of the app.
+  // But let's use the explicit base for correctness.
+  const baseUrl = import.meta.env.BASE_URL
+  const defaultImage = baseUrl === './' ? './entropy-icon.png' : `${baseUrl}entropy-icon.png`.replace('//', '/')
+  
+  const texture = useTexture(imageURL || defaultImage)
   const materialRef = useRef<THREE.ShaderMaterial>(null)
   const [seed] = useState(() => Math.random())
 
