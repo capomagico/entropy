@@ -262,13 +262,12 @@ function ScreenQuad() {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const materialRef = useRef<THREE.ShaderMaterial>(null)
   const exportCameraRef = useRef<THREE.OrthographicCamera>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const controlsRef = useRef<any>(null)
 
   useEffect(() => {
-    if (!imageURL) {
-      setTexture(null)
-      return
-    }
+    // Reset texture when imageURL changes
+    if (!imageURL) return
 
     const loader = new THREE.TextureLoader()
     let isMounted = true
@@ -309,7 +308,7 @@ function ScreenQuad() {
       }
     })
     return () => { isMounted = false }
-  }, [imageURL])
+  }, [imageURL, camera, size])
 
   const paletteUniform = useMemo(() => {
     return paletteColors.map(hex => {
