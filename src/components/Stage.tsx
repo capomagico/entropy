@@ -384,17 +384,28 @@ function ScreenQuad() {
       gl.render(scene, cam) // Render using the export camera
       
       try {
-        const dataURL = gl.domElement.toDataURL('image/png', 1.0)
-        const link = document.createElement('a')
-        
-        const now = new Date()
-        const timestamp = now.getTime().toString().slice(-6) // Last 6 digits of timestamp
-        
-        link.download = `entropy_${timestamp}.png`
-        link.href = dataURL
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        // Convert canvas to Blob for better iOS/Safari compatibility
+        gl.domElement.toBlob((blob) => {
+          if (!blob) {
+            console.error('Failed to create blob')
+            return
+          }
+          
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          
+          const now = new Date()
+          const timestamp = now.getTime().toString().slice(-6)
+          
+          link.download = `entropy_${timestamp}.png`
+          link.href = url
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          
+          // Clean up the object URL after a short delay
+          setTimeout(() => URL.revokeObjectURL(url), 100)
+        }, 'image/png', 1.0)
       } catch (error) {
         console.error('Export failed:', error)
       }
