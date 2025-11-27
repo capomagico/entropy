@@ -224,7 +224,7 @@ export function LabOverlay() {
             
             {/* COLOR */}
             <div className="border-8 border-black p-4 bg-black text-white">
-              <div className="text-xl font-black mb-4 uppercase tracking-wider border-b-4 border-white pb-2">
+              <div className="text-xl font-bold mb-4 uppercase tracking-wider border-b-4 border-white pb-2">
                 COLOR
               </div>
               
@@ -241,7 +241,7 @@ export function LabOverlay() {
               {colorMode === 2 && (
                 <div className="mt-4">
                   <div className="flex justify-between mb-2">
-                    <span className="font-black uppercase text-sm">HUE</span>
+                    <span className="font-semibold uppercase text-sm">HUE</span>
                     <div className="w-12 h-6 border-4 border-white" style={{ backgroundColor: hueToRGB(tintHue) }} />
                   </div>
                   <input
@@ -312,7 +312,7 @@ export function LabOverlay() {
 
             {/* ADJUST */}
             <div className="border-8 border-black p-4 bg-black text-white">
-              <div className="text-xl font-black mb-4 uppercase tracking-wider border-b-4 border-white pb-2">
+              <div className="text-xl font-bold mb-4 uppercase tracking-wider border-b-4 border-white pb-2">
                 ADJUST
               </div>
               
@@ -325,8 +325,8 @@ export function LabOverlay() {
               ].map(({ label, value, setter, min, max }) => (
                 <div key={label} className="mb-3">
                   <div className="flex justify-between mb-1">
-                    <span className="font-black uppercase text-sm">{label}</span>
-                    <span className="text-[#f27200] font-black">{typeof value === 'number' ? value.toFixed(0) : value}</span>
+                    <span className="font-semibold uppercase text-sm">{label}</span>
+                    <span className="text-[#f27200] font-bold">{typeof value === 'number' ? value.toFixed(0) : value}</span>
                   </div>
                   <input
                     type="range"
@@ -343,7 +343,7 @@ export function LabOverlay() {
 
             {/* DITHER */}
             <div className="border-8 border-black p-4 bg-[#f27200] text-black">
-              <div className="text-xl font-black mb-4 uppercase tracking-wider border-b-4 border-black pb-2">
+              <div className="text-xl font-bold mb-4 uppercase tracking-wider border-b-4 border-black pb-2">
                 DITHER
               </div>
               
@@ -359,8 +359,8 @@ export function LabOverlay() {
 
               <div className="mb-3">
                 <div className="flex justify-between mb-1">
-                  <span className="font-black uppercase text-sm">STRENGTH</span>
-                  <span className="font-black">{ditherStrength.toFixed(2)}</span>
+                  <span className="font-semibold uppercase text-sm">STRENGTH</span>
+                  <span className="font-bold">{ditherStrength.toFixed(2)}</span>
                 </div>
                 <input
                   type="range"
@@ -375,8 +375,8 @@ export function LabOverlay() {
 
               <div className="mb-1">
                 <div className="flex justify-between mb-1">
-                  <span className="font-black uppercase text-sm">SCALE</span>
-                  <span className="font-black">{ditherScale.toFixed(1)}x</span>
+                  <span className="font-semibold uppercase text-sm">SCALE</span>
+                  <span className="font-bold">{ditherScale.toFixed(1)}x</span>
                 </div>
                 <input
                   type="range"
@@ -421,7 +421,7 @@ export function LabOverlay() {
           <span className="text-black text-2xl font-black uppercase tracking-wider">
             {imageURL ? 'IMAGE LOADED' : 'NO IMAGE'}
           </span>
-          <span className="text-black/30 text-xs font-black ml-4">
+          <span className="text-black/30 text-xs font-normal ml-4">
             © MATTIA CAPOMAGI 2025
           </span>
         </div>
