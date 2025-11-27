@@ -10,8 +10,7 @@ const DITHER_ALGORITHMS = [
   { id: 4, name: 'Clustered Dot (Halftone)' },
   { id: 5, name: 'Halftone Dot (Round)' },
   { id: 6, name: 'Halftone Line (Scan)' },
-  { id: 7, name: 'Crosshatch (Sketch)' },
-  { id: 8, name: 'Floyd-Steinberg (CPU)' }
+  { id: 7, name: 'Crosshatch (Sketch)' }
 ]
 
 const COLOR_MODES = [
@@ -175,16 +174,7 @@ export function LabOverlay() {
         style={{ pointerEvents: imageURL ? 'none' : 'auto' }}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-      >
-        {!imageURL && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-black border-4 border-white p-8 text-center text-white font-mono">
-              <div className="text-2xl font-bold mb-2">◆ DROP IMAGE HERE ◆</div>
-              <div className="text-sm opacity-70">or click [UPLOAD] button</div>
-            </div>
-          </div>
-        )}
-      </div>
+      />
 
       <div className="absolute inset-0 pointer-events-none flex flex-col p-4 z-20 font-mono text-white">
         <input
@@ -457,15 +447,6 @@ export function LabOverlay() {
             </div>
           ) : (
             <div className="flex-1 relative bg-black/50 rounded-lg overflow-hidden flex flex-col">
-              <div className="absolute top-4 right-4 z-10">
-                 <button 
-                   onClick={() => setImage(null, 0, 0)}
-                   className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-colors"
-                   title="Remove Image"
-                 >
-                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                 </button>
-              </div>
               <div className="flex-1 relative">
                 <Stage />
               </div>
@@ -478,13 +459,22 @@ export function LabOverlay() {
           <div className="text-sm">
             {imageURL ? '■ IMAGE LOADED' : '□ NO IMAGE'}
           </div>
-          <button 
-            onClick={handleExport}
-            disabled={!imageURL}
-            className="bg-[#f27200] text-white px-6 py-2 border-4 border-white font-bold uppercase hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            [DOWNLOAD] 
-          </button>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => setImage(null, 0, 0)}
+              disabled={!imageURL}
+              className="bg-black text-white px-6 py-2 border-4 border-white font-bold uppercase hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              [CLEAR]
+            </button>
+            <button 
+              onClick={handleExport}
+              disabled={!imageURL}
+              className="bg-[#f27200] text-white px-6 py-2 border-4 border-white font-bold uppercase hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              [DOWNLOAD] 
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -3,27 +3,6 @@ import { useRef, useEffect, useState, useMemo } from 'react'
 import * as THREE from 'three'
 import { useStore } from '../store'
 
-// Helper for FS
-const getRGB = (hex: string) => {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return { r, g, b }
-}
-
-const findClosestColor = (r: number, g: number, b: number, palette: {r:number, g:number, b:number}[]) => {
-  let minDist = Infinity
-  let closest = palette[0]
-  for (const color of palette) {
-    const dist = (r - color.r) ** 2 + (g - color.g) ** 2 + (b - color.b) ** 2
-    if (dist < minDist) {
-      minDist = dist
-      closest = color
-    }
-  }
-  return closest
-}
-
 const vertexShader = `
 varying vec2 vUv;
 void main() {
@@ -34,7 +13,6 @@ void main() {
 
 const fragmentShader = `
 uniform sampler2D uTexture;
-uniform sampler2D uFSTexture; // New uniform for FS result
 uniform float uDitherStrength;
 uniform int uDitherAlgorithm;
 uniform float uBrightness;
@@ -50,8 +28,6 @@ uniform vec2 uResolution;
 uniform vec2 uImageResolution;
 uniform bool uHasImage;
 uniform float uTime;
-uniform vec2 uMouse;
-uniform bool uMagnifierActive;
 
 varying vec2 vUv;
 
@@ -141,18 +117,7 @@ float halftoneLine(vec2 uv, float angle, float scale) {
 }
 
 // Function to get the dithered color BEFORE adjustments
-vec3 getDitheredColor(vec2 uv, vec2 ditherCoord) {
-  // If Floyd-Steinberg (ID 8), sample from the pre-calculated texture
-  if (uDitherAlgorithm == 8) {
-     vec3 fsColor = texture2D(uFSTexture, uv).rgb;
-     // Mix based on strength (though FS is usually binary, we allow blending)
-     vec3 original = texture2D(uTexture, uv).rgb;
-     
-     // For palette modes, we might want to respect the palette?
-     // The FS texture is already quantized.
-     return mix(original, fsColor, uDitherStrength);
-  }
-
+vec3 getDitheredColor(vec2 uv) {
   // No pixelation/DPI logic anymore, just raw texture sampling
   vec3 color = texture2D(uTexture, uv).rgb;
   
@@ -179,8 +144,8 @@ vec3 getDitheredColor(vec2 uv, vec2 ditherCoord) {
     float localFract = fract(scaledGray);
     
     if (uDitherStrength > 0.0) {
-       // Use ditherCoord instead of gl_FragCoord
-       vec2 pixelCoord = ditherCoord;
+       // Use gl_FragCoord instead of ditherCoord
+       vec2 pixelCoord = gl_FragCoord.xy;
        float threshold = 0.5;
        
        // Algorithms
@@ -224,8 +189,8 @@ vec3 getDitheredColor(vec2 uv, vec2 ditherCoord) {
   
   // Standard Dithering (for non-palette modes)
   if (uDitherStrength > 0.0 && uColorMode != 3) {
-    // Use ditherCoord instead of gl_FragCoord
-    vec2 pixelCoord = ditherCoord;
+    // Use gl_FragCoord instead of ditherCoord
+    vec2 pixelCoord = gl_FragCoord.xy;
     float threshold = 0.5;
     
     if (uDitherAlgorithm == 0) threshold = bayer2x2(pixelCoord);
@@ -276,50 +241,25 @@ void main() {
   vec2 scale = ratio / maxRatio;
   vec2 uvContain = (vUv - 0.5) / scale + 0.5;
   
-  if (uvContain.x < 0.0 || uvContain.x > 1.0 || uvContain.y < 0.0 || uvContain.y > 1.0) {
+  // Add epsilon to avoid edge artifacts
+  if (uvContain.x < 0.001 || uvContain.x > 0.999 || uvContain.y < 0.001 || uvContain.y > 0.999) {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     return;
   }
 
   vec2 uv = uvContain;
   
-  // Magnifier Logic
-  if (uMagnifierActive) {
-    // Correct aspect ratio for round lens
-    float aspect = uResolution.x / uResolution.y;
-    vec2 aspectCorrection = vec2(aspect, 1.0);
-    
-    float dist = distance(uv * aspectCorrection, uMouse * aspectCorrection);
-    float radius = 0.15; // Lens radius
-    float zoom = 3.0;
-    
-    if (dist < radius) {
-      // Zoom in
-      uv = (uv - uMouse) / zoom + uMouse;
-      
-      // Add a subtle border
-      if (dist > radius - 0.005) {
-         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // White border
-         return;
-      }
-    }
-  }
-
-  // Calculate dither coordinate based on UV and Image Resolution
-  // This ensures the pattern sticks to the image pixels
-  vec2 ditherCoord = uv * uImageResolution;
-
   vec3 color;
 
   // 1. Chromatic Aberration
   if (uAberration > 0.0) {
     float offset = uAberration * 0.01; 
-    float r = getDitheredColor(uv + vec2(offset, 0.0), ditherCoord).r;
-    float g = getDitheredColor(uv, ditherCoord).g;
-    float b = getDitheredColor(uv - vec2(offset, 0.0), ditherCoord).b;
+    float r = getDitheredColor(uv + vec2(offset, 0.0)).r;
+    float g = getDitheredColor(uv).g;
+    float b = getDitheredColor(uv - vec2(offset, 0.0)).b;
     color = vec3(r, g, b);
   } else {
-    color = getDitheredColor(uv, ditherCoord);
+    color = getDitheredColor(uv);
   }
   
   // 2. Adjustments
@@ -365,7 +305,6 @@ function ScreenQuad() {
   const setIsExporting = useStore((state) => state.setIsExporting)
   
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
-  const [fsTexture, setFsTexture] = useState<THREE.Texture | null>(null)
   const materialRef = useRef<THREE.ShaderMaterial>(null)
 
   useEffect(() => {
@@ -380,103 +319,14 @@ function ScreenQuad() {
       if (isMounted) {
         loadedTexture.minFilter = THREE.NearestFilter
         loadedTexture.magFilter = THREE.NearestFilter
+        loadedTexture.wrapS = THREE.ClampToEdgeWrapping
+        loadedTexture.wrapT = THREE.ClampToEdgeWrapping
+        loadedTexture.needsUpdate = true
         setTexture(loadedTexture)
       }
     })
     return () => { isMounted = false }
   }, [imageURL])
-
-  // Floyd-Steinberg Processing Effect
-  useEffect(() => {
-    if (ditherAlgorithm !== 8 || !texture || !texture.image) {
-      setFsTexture(null) // Clear FS texture if not using FS or no image
-      return
-    }
-
-    const img = texture.image as HTMLImageElement
-    const canvas = document.createElement('canvas')
-    canvas.width = img.width
-    canvas.height = img.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    ctx.drawImage(img, 0, 0)
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    const data = imageData.data
-    const width = canvas.width
-    const height = canvas.height
-
-    // Prepare Palette based on Color Mode
-    let palette: {r:number, g:number, b:number}[] = []
-    
-    if (colorMode === 3) { // Multicolor
-      palette = paletteColors.map(getRGB)
-    } else if (colorMode === 1 || colorMode === 2) { // Grayscale or Tint
-      // 2 levels: Black and White (or mapped later)
-      palette = [{r:0, g:0, b:0}, {r:255, g:255, b:255}]
-    } else { // Full Color
-      // 3 levels per channel (Web Safe-ish)
-      // We don't use a simple array for this, we quantize per channel
-    }
-
-    // Processing Loop
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const i = (y * width + x) * 4
-        const oldR = data[i]
-        const oldG = data[i + 1]
-        const oldB = data[i + 2]
-
-        let newR, newG, newB
-
-        if (colorMode === 0) { // Full Color (Per-channel quantization)
-           const levels = 2 // 0, 127, 255
-           newR = Math.round(oldR / 255 * levels) / levels * 255
-           newG = Math.round(oldG / 255 * levels) / levels * 255
-           newB = Math.round(oldB / 255 * levels) / levels * 255
-        } else if (colorMode === 1 || colorMode === 2) { // Grayscale/Tint
-           const gray = 0.299 * oldR + 0.587 * oldG + 0.114 * oldB
-           const closest = gray < 128 ? 0 : 255
-           newR = newG = newB = closest
-        } else { // Palette
-           const closest = findClosestColor(oldR, oldG, oldB, palette)
-           newR = closest.r
-           newG = closest.g
-           newB = closest.b
-        }
-
-        data[i] = newR
-        data[i + 1] = newG
-        data[i + 2] = newB
-
-        const errR = oldR - newR
-        const errG = oldG - newG
-        const errB = oldB - newB
-
-        const distribute = (dx: number, dy: number, factor: number) => {
-          const nx = x + dx
-          const ny = y + dy
-          if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-            const ni = (ny * width + nx) * 4
-            data[ni] = Math.min(255, Math.max(0, data[ni] + errR * factor))
-            data[ni + 1] = Math.min(255, Math.max(0, data[ni + 1] + errG * factor))
-            data[ni + 2] = Math.min(255, Math.max(0, data[ni + 2] + errB * factor))
-          }
-        }
-
-        distribute(1, 0, 7/16)
-        distribute(-1, 1, 3/16)
-        distribute(0, 1, 5/16)
-        distribute(1, 1, 1/16)
-      }
-    }
-
-    const newTex = new THREE.CanvasTexture(canvas)
-    newTex.minFilter = THREE.NearestFilter
-    newTex.magFilter = THREE.NearestFilter
-    setFsTexture(newTex)
-
-  }, [ditherAlgorithm, texture, colorMode, paletteColors]) // Re-run when these change
 
   const paletteUniform = useMemo(() => {
     return paletteColors.map(hex => {
@@ -487,7 +337,6 @@ function ScreenQuad() {
 
   const [uniforms] = useState(() => ({
     uTexture: { value: null },
-    uFSTexture: { value: null }, // Add to uniforms
     uDitherStrength: { value: 0.0 },
     uDitherAlgorithm: { value: 2 },
     uBrightness: { value: 0.0 },
@@ -502,9 +351,7 @@ function ScreenQuad() {
     uResolution: { value: new THREE.Vector2(size.width, size.height) },
     uImageResolution: { value: new THREE.Vector2(1, 1) },
     uHasImage: { value: false },
-    uTime: { value: 0 },
-    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-    uMagnifierActive: { value: false }
+    uTime: { value: 0 }
   }))
 
   useEffect(() => {
@@ -523,7 +370,6 @@ function ScreenQuad() {
       materialRef.current.uniforms.uTime.value = state.clock.elapsedTime
       materialRef.current.uniforms.uDitherStrength.value = ditherStrength
       materialRef.current.uniforms.uDitherAlgorithm.value = ditherAlgorithm
-      materialRef.current.uniforms.uFSTexture.value = fsTexture // Pass FS texture
       
       // MAPPING 1-100 to Shader Values
       // Brightness: 50 -> 0. Range -0.2 to 0.2
@@ -546,16 +392,6 @@ function ScreenQuad() {
       materialRef.current.uniforms.uColorMode.value = colorMode
       materialRef.current.uniforms.uTintHue.value = tintHue
       materialRef.current.uniforms.uPalette.value = paletteUniform
-      
-      // Update Mouse
-      // state.pointer is -1 to 1. Map to 0 to 1.
-      const mx = (state.pointer.x + 1) / 2
-      const my = (state.pointer.y + 1) / 2
-      materialRef.current.uniforms.uMouse.value.set(mx, my)
-      
-      // Activate magnifier if mouse is inside the viewport
-      const isInside = Math.abs(state.pointer.x) <= 1.0 && Math.abs(state.pointer.y) <= 1.0
-      materialRef.current.uniforms.uMagnifierActive.value = isInside
       
       if (isExporting && texture && texture.image) {
         const img = texture.image as HTMLImageElement
@@ -614,7 +450,7 @@ function ScreenQuad() {
 export function Stage() {
   return (
     <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center pointer-events-none">
-      <div className="relative w-[80%] h-[80%] border-4 border-white pointer-events-auto">
+      <div className="relative w-[95%] h-[95%] pointer-events-auto">
         <Canvas
           gl={{ preserveDrawingBuffer: true, antialias: false }}
           dpr={[1, 1]}
