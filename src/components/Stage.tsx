@@ -269,7 +269,7 @@ void main() {
 `
 
 function ScreenQuad() {
-  const { gl, scene } = useThree()
+  const { gl, scene, camera, size } = useThree()
   const imageURL = useStore((state) => state.imageURL)
   const ditherStrength = useStore((state) => state.ditherStrength)
   const ditherScale = useStore((state) => state.ditherScale)
@@ -307,9 +307,31 @@ function ScreenQuad() {
         loadedTexture.needsUpdate = true
         setTexture(loadedTexture)
         
-        // Reset controls when new image loads
-        if (controlsRef.current) {
-          controlsRef.current.reset()
+        // FIT TO SCREEN LOGIC
+        const img = loadedTexture.image
+        if (img && controlsRef.current && camera) {
+           const padding = 0.9 // Keep 90% of screen filled
+           const screenAspect = size.width / size.height
+           const imageAspect = img.width / img.height
+           
+           let newZoom = 1
+           if (screenAspect > imageAspect) {
+             // Screen is wider than image -> Fit to height
+             newZoom = (size.height * padding) / img.height
+           } else {
+             // Screen is taller than image -> Fit to width
+             newZoom = (size.width * padding) / img.width
+           }
+           
+           // Update camera zoom
+           const orthoCam = camera as THREE.OrthographicCamera
+           orthoCam.zoom = newZoom
+           orthoCam.updateProjectionMatrix()
+           
+           // Reset controls center
+           controlsRef.current.reset()
+           controlsRef.current.object.zoom = newZoom
+           controlsRef.current.object.updateProjectionMatrix()
         }
       }
     })
