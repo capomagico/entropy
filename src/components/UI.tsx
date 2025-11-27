@@ -164,7 +164,7 @@ export function LabOverlay() {
       />
 
       {/* HEADER BAR */}
-      <div className="h-20 bg-white border-b-8 border-black flex items-center justify-between px-8">
+      <div className="h-20 bg-white border-b-8 border-black flex items-center px-8">
         <div className="flex items-center gap-8">
           <button
             onClick={() => setCurrentTool('MENU')}
@@ -176,12 +176,6 @@ export function LabOverlay() {
             ENTROPY / DITHER
           </div>
         </div>
-        <button
-          onClick={handleFileClick}
-          className="bg-black text-white px-8 py-4 border-8 border-black font-black text-xl uppercase tracking-wider hover:bg-[#f27200]"
-        >
-          UPLOAD
-        </button>
       </div>
 
       {/* MAIN CONTENT */}
@@ -344,10 +338,13 @@ export function LabOverlay() {
 
       {/* FOOTER BAR */}
       <div className="absolute bottom-0 left-0 right-0 h-24 bg-white border-t-8 border-black flex items-center justify-between px-8">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <div className={`w-6 h-6 ${imageURL ? 'bg-[#f27200]' : 'bg-black'} border-4 border-black`} />
           <span className="text-black text-2xl font-black uppercase tracking-wider">
             {imageURL ? 'IMAGE LOADED' : 'NO IMAGE'}
+          </span>
+          <span className="text-black/30 text-xs font-black ml-4">
+            © MATTIA CAPOMAGI 2025
           </span>
         </div>
         
