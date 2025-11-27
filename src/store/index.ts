@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 type Tool = 'MENU' | 'DITHER'
 
@@ -74,7 +75,7 @@ const getHistoryState = (state: AppState): Partial<AppState> => ({
   paletteColors: [...state.paletteColors],
 })
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<AppState>()(persist((set, get) => ({
   currentTool: 'MENU',
   imageURL: null,
   imageDimensions: { width: 0, height: 0 },
@@ -161,4 +162,24 @@ export const useStore = create<AppState>((set, get) => ({
   
   setIsExporting: (isExporting) => set({ isExporting }),
   setIsFullscreen: (isFullscreen) => set({ isFullscreen }),
+}), {
+  name: 'entropy-storage',
+  partialize: (state) => ({
+    currentTool: state.currentTool,
+    ditherStrength: state.ditherStrength,
+    ditherScale: state.ditherScale,
+    ditherAlgorithm: state.ditherAlgorithm,
+    brightness: state.brightness,
+    contrast: state.contrast,
+    saturation: state.saturation,
+    gamma: state.gamma,
+    vibrance: state.vibrance,
+    shadows: state.shadows,
+    highlights: state.highlights,
+    blacks: state.blacks,
+    whites: state.whites,
+    colorMode: state.colorMode,
+    tintHue: state.tintHue,
+    paletteColors: state.paletteColors,
+  })
 }))
