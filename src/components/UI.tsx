@@ -189,7 +189,7 @@ export function LabOverlay() {
 
   // DITHER TOOL
   return (
-    <div className="absolute inset-0 bg-black">
+    <div className="absolute inset-0 bg-black h-[100dvh] w-full overflow-hidden">
       <input
         ref={fileInputRef}
         type="file"
@@ -320,7 +320,7 @@ export function LabOverlay() {
                         type="color"
                         value={color}
                         onChange={(e) => updatePaletteColor(index, e.target.value)}
-                        className="w-full h-12 border-2 border-[#f27200] cursor-pointer"
+                        className="w-full aspect-square border-2 border-[#f27200] cursor-pointer p-0"
                       />
                     ))}
                   </div>
@@ -415,7 +415,7 @@ export function LabOverlay() {
       </div>
 
       {/* FOOTER - BLACK */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 md:h-20 bg-black border-t-2 border-[#f27200] flex items-center justify-between px-4 md:px-6">
+      <div className="absolute bottom-0 left-0 right-0 h-16 md:h-20 bg-black border-t-2 border-[#f27200] flex items-center justify-between px-4 md:px-6 pb-safe">
         <div className="flex items-center">
           <span className="text-white/50 text-xs md:text-sm font-bold uppercase tracking-widest">
             © 2025 MATTIA CAPOMAGI

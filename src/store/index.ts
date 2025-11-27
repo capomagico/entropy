@@ -36,9 +36,31 @@ interface AppState {
   setTintHue: (hue: number) => void
   setPaletteColors: (colors: string[]) => void
   setIsExporting: (isExporting: boolean) => void
+  // History
+  past: AppState[],
+  future: AppState[],
+  
+  undo: () => void
+  redo: () => void
+  pushToHistory: () => void
 }
 
-export const useStore = create<AppState>((set) => ({
+// Helper to get relevant state for history
+const getHistoryState = (state: AppState): Partial<AppState> => ({
+  ditherStrength: state.ditherStrength,
+  ditherScale: state.ditherScale,
+  ditherAlgorithm: state.ditherAlgorithm,
+  brightness: state.brightness,
+  contrast: state.contrast,
+  saturation: state.saturation,
+  gamma: state.gamma,
+  vibrance: state.vibrance,
+  colorMode: state.colorMode,
+  tintHue: state.tintHue,
+  paletteColors: [...state.paletteColors],
+})
+
+export const useStore = create<AppState>((set, get) => ({
   currentTool: 'MENU',
   imageURL: null,
   imageDimensions: { width: 0, height: 0 },
@@ -56,19 +78,63 @@ export const useStore = create<AppState>((set) => ({
   paletteColors: ['#0d080d', '#4f2b24', '#825b31', '#c59154'],
   
   isExporting: false,
+  
+  past: [],
+  future: [],
+
+  pushToHistory: () => {
+    const currentState = get()
+    const historyEntry = getHistoryState(currentState) as AppState
+    set((state) => ({
+      past: [...state.past, historyEntry],
+      future: []
+    }))
+  },
+
+  undo: () => {
+    const { past, future } = get()
+    if (past.length === 0) return
+
+    const previous = past[past.length - 1]
+    const newPast = past.slice(0, past.length - 1)
+    const current = getHistoryState(get()) as AppState
+
+    set({
+      ...previous,
+      past: newPast,
+      future: [current, ...future]
+    })
+  },
+
+  redo: () => {
+    const { past, future } = get()
+    if (future.length === 0) return
+
+    const next = future[0]
+    const newFuture = future.slice(1)
+    const current = getHistoryState(get()) as AppState
+
+    set({
+      ...next,
+      past: [...past, current],
+      future: newFuture
+    })
+  },
 
   setCurrentTool: (tool) => set({ currentTool: tool }),
   setImage: (url, width, height) => set({ imageURL: url, imageDimensions: { width, height } }),
-  setDitherStrength: (strength) => set({ ditherStrength: strength }),
-  setDitherScale: (scale) => set({ ditherScale: scale }),
-  setDitherAlgorithm: (algorithm) => set({ ditherAlgorithm: algorithm }),
-  setBrightness: (brightness) => set({ brightness }),
-  setContrast: (contrast) => set({ contrast }),
-  setSaturation: (saturation) => set({ saturation }),
-  setGamma: (gamma) => set({ gamma }),
-  setVibrance: (vibrance) => set({ vibrance }),
-  setColorMode: (mode) => set({ colorMode: mode }),
-  setTintHue: (hue) => set({ tintHue: hue }),
-  setPaletteColors: (colors) => set({ paletteColors: colors }),
+  
+  setDitherStrength: (strength) => { get().pushToHistory(); set({ ditherStrength: strength }) },
+  setDitherScale: (scale) => { get().pushToHistory(); set({ ditherScale: scale }) },
+  setDitherAlgorithm: (algorithm) => { get().pushToHistory(); set({ ditherAlgorithm: algorithm }) },
+  setBrightness: (brightness) => { get().pushToHistory(); set({ brightness }) },
+  setContrast: (contrast) => { get().pushToHistory(); set({ contrast }) },
+  setSaturation: (saturation) => { get().pushToHistory(); set({ saturation }) },
+  setGamma: (gamma) => { get().pushToHistory(); set({ gamma }) },
+  setVibrance: (vibrance) => { get().pushToHistory(); set({ vibrance }) },
+  setColorMode: (mode) => { get().pushToHistory(); set({ colorMode: mode }) },
+  setTintHue: (hue) => { get().pushToHistory(); set({ tintHue: hue }) },
+  setPaletteColors: (colors) => { get().pushToHistory(); set({ paletteColors: colors }) },
+  
   setIsExporting: (isExporting) => set({ isExporting }),
 }))
