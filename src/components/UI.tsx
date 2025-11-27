@@ -157,32 +157,29 @@ export function LabOverlay() {
   if (currentTool === 'MENU') {
     return (
       <div className="absolute inset-0 bg-black flex items-center justify-center text-white p-4">
-        <div className="border-[8px] md:border-[16px] border-white p-8 md:p-16 max-w-3xl w-full">
-          <h1 className="text-5xl md:text-8xl font-black mb-4 tracking-tight uppercase">ENTROPY</h1>
-          <div className="text-[#f27200] text-xl md:text-3xl mb-8 md:mb-16 tracking-widest font-black uppercase border-b-4 md:border-b-8 border-[#f27200] pb-4">
-            SYSTEM v2.0
-          </div>
+        <div className="border-[4px] md:border-[8px] border-white p-6 md:p-10 max-w-xl w-full">
+          <h1 className="text-4xl md:text-6xl font-black mb-8 tracking-tight uppercase text-center">ENTROPY</h1>
           
-          <div className="space-y-6">
+          <div className="space-y-4">
             <button 
               onClick={() => setCurrentTool('DITHER')}
-              className="w-full bg-white text-black text-2xl md:text-4xl font-black py-4 md:py-8 hover:bg-[#f27200] hover:text-white border-2 md:border-4 border-black uppercase tracking-wider"
+              className="w-full bg-white text-black text-lg md:text-xl font-bold py-3 md:py-4 hover:bg-[#f27200] hover:text-white border-2 border-black uppercase tracking-wider"
             >
               DITHER TOOL
             </button>
             
             <button 
               disabled
-              className="w-full bg-black text-white/30 text-4xl font-black py-8 border-4 border-white/30 cursor-not-allowed uppercase tracking-wider"
+              className="w-full bg-black text-white/30 text-lg md:text-xl font-bold py-3 md:py-4 border-2 border-white/30 cursor-not-allowed uppercase tracking-wider"
             >
-              GLITCH [LOCKED]
+              GLITCH [COMING SOON]
             </button>
             
             <button 
               disabled
-              className="w-full bg-black text-white/30 text-4xl font-black py-8 border-4 border-white/30 cursor-not-allowed uppercase tracking-wider"
+              className="w-full bg-black text-white/30 text-lg md:text-xl font-bold py-3 md:py-4 border-2 border-white/30 cursor-not-allowed uppercase tracking-wider"
             >
-              DATAMOSH [LOCKED]
+              DATAMOSH [COMING SOON]
             </button>
           </div>
         </div>
