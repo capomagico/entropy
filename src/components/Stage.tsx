@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { useRef, useEffect, useState, useMemo } from 'react'
+import { useRef, useEffect, useState, useMemo, memo } from 'react'
 import * as THREE from 'three'
 import { useStore } from '../store'
 import { MapControls, OrthographicCamera } from '@react-three/drei'
@@ -242,7 +242,7 @@ void main() {
 }
 `
 
-function ScreenQuad() {
+const ScreenQuad = memo(function ScreenQuad() {
   const { gl, scene, camera, size } = useThree()
   const imageURL = useStore((state) => state.imageURL)
   const ditherStrength = useStore((state) => state.ditherStrength)
@@ -457,7 +457,7 @@ function ScreenQuad() {
       </mesh>
     </>
   )
-}
+})
 
 export function Stage() {
   return (
