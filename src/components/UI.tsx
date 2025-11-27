@@ -21,6 +21,7 @@ const COLOR_MODES = [
 ]
 
 const PALETTE_PRESETS = [
+  // Original 8
   { name: 'COFFEE', colors: ['#0d080d', '#4f2b24', '#825b31', '#c59154'] },
   { name: 'GAMEBOY', colors: ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'] },
   { name: 'CGA', colors: ['#000000', '#55ffff', '#ff55ff', '#ffffff'] },
@@ -29,6 +30,33 @@ const PALETTE_PRESETS = [
   { name: 'MATRIX', colors: ['#000000', '#003b00', '#008f11', '#00ff41'] },
   { name: 'SEPIA', colors: ['#2e1d0e', '#6b4826', '#b08d55', '#e8dcb5'] },
   { name: 'B&W', colors: ['#000000', '#555555', '#aaaaaa', '#ffffff'] },
+  // New 20+
+  { name: 'CRIMSON', colors: ['#1a0000', '#4d0000', '#990000', '#ff0000', '#ff6666'] },
+  { name: 'OCEAN', colors: ['#001a33', '#003366', '#0066cc', '#3399ff', '#66ccff'] },
+  { name: 'FOREST', colors: ['#0d1f0d', '#1a3d1a', '#2d5c2d', '#408040', '#66b366'] },
+  { name: 'SUNSET', colors: ['#1a0a00', '#ff4500', '#ff8c00', '#ffd700'] },
+  { name: 'PURPLE HAZE', colors: ['#1a001a', '#4d004d', '#800080', '#b366b3', '#e6b3e6'] },
+  { name: 'ELECTRIC', colors: ['#000d1a', '#001a33', '#00ffff', '#ffff00', '#ff00ff'] },
+  { name: 'RUST', colors: ['#2b1100', '#5c2200', '#b54500', '#ff6600', '#ff9933'] },
+  { name: 'NORD', colors: ['#2e3440', '#3b4252', '#88c0d0', '#ebcb8b', '#d8dee9'] },
+  { name: 'DRACULA', colors: ['#282a36', '#44475a', '#ff79c6', '#8be9fd', '#f8f8f2'] },
+  { name: 'GRUVBOX', colors: ['#282828', '#cc241d', '#98971a', '#d79921', '#fbf1c7'] },
+  { name: 'TOKYO NIGHT', colors: ['#1a1b26', '#7aa2f7', '#bb9af7', '#f7768e', '#c0caf5'] },
+  { name: 'MONOKAI', colors: ['#272822', '#f92672', '#a6e22e', '#f4bf75', '#f8f8f2'] },
+  { name: 'PASTEL', colors: ['#ffe4e1', '#ffd1dc', '#c5d8f7', '#d4f1f4', '#b0e0e6'] },
+  { name: 'NEON', colors: ['#000000', '#ff006e', '#00f5ff', '#ffbe0b', '#ffffff'] },
+  { name: 'EARTH', colors: ['#3d2314', '#6b4423', '#9c6644', '#c19a6b', '#e5c29f'] },
+  { name: 'ICE', colors: ['#0a1828', '#1e3a5f', '#4a90a4', '#7fc8d6', '#e0f7fa'] },
+  { name: 'FIRE', colors: ['#1a0000', '#660000', '#cc0000', '#ff3300', '#ff9900', '#ffcc00'] },
+  { name: 'RETRO', colors: ['#2d1b00', '#d2691e', '#f4a460', '#ffdead'] },
+  { name: 'VAPORWAVE', colors: ['#ff71ce', '#01cdfe', '#05ffa1', '#b967ff', '#fffb96'] },
+  { name: 'OUTRUN', colors: ['#2b0f54', '#ab20fd', '#ff0055', '#ff6c11', '#ffee00'] },
+  { name: 'ACID', colors: ['#000000', '#39ff14', '#ff10f0', '#fff000', '#00ffff'] },
+  { name: 'COPPER', colors: ['#1a0f00', '#3d2817', '#6b4423', '#b87333', '#d4a574', '#f0d9b5'] },
+  { name: 'SLATE', colors: ['#1e293b', '#334155', '#64748b', '#94a3b8', '#cbd5e1'] },
+  { name: 'AMBER', colors: ['#1a0f00', '#78350f', '#b45309', '#f59e0b', '#fbbf24', '#fde68a'] },
+  { name: 'EMERALD', colors: ['#022c22', '#064e3b', '#059669', '#10b981', '#6ee7b7'] },
+  { name: 'ROSE', colors: ['#1a0000', '#881337', '#e11d48', '#fb7185', '#fda4af', '#ffe4e6'] },
 ]
 
 export function LabOverlay() {
@@ -302,7 +330,7 @@ export function LabOverlay() {
                 </div>
                 <input
                   type="range"
-                  min="0"
+                  min="0.15"
                   max="1"
                   step="0.01"
                   value={ditherStrength}
