@@ -363,22 +363,21 @@ function ScreenQuad() {
       materialRef.current.uniforms.uDitherScale.value = ditherScale
       materialRef.current.uniforms.uDitherAlgorithm.value = ditherAlgorithm
       
-      // MAPPING 1-100 to Shader Values
-      // Brightness: 50 -> 0. Range -0.2 to 0.2
-      materialRef.current.uniforms.uBrightness.value = (brightness - 50) / 50 * 0.2
+      // MAPPING 0-200 to Shader Values
+      // Brightness: 100 -> 0. Range -0.5 to 0.5
+      materialRef.current.uniforms.uBrightness.value = (brightness - 100) / 100.0 * 0.5
       
-      // Contrast: 50 -> 1.0. Range 0.5 to 1.5
-      materialRef.current.uniforms.uContrast.value = (contrast - 50) / 50 * 0.5 + 1.0
+      // Contrast: 100 -> 1.0. Range 0.0 to 2.0
+      materialRef.current.uniforms.uContrast.value = contrast / 100.0
       
-      // Saturation: 50 -> 1.0. Range 0.0 to 2.0
-      materialRef.current.uniforms.uSaturation.value = saturation / 50.0
+      // Saturation: 100 -> 1.0. Range 0.0 to 2.0
+      materialRef.current.uniforms.uSaturation.value = saturation / 100.0
       
-      // Gamma: 50 -> 1.0. Range 0.1 to 3.0?
-      // Let's map 1-100 to 0.5 - 2.5 roughly
-      materialRef.current.uniforms.uGamma.value = (gamma / 50.0)
+      // Gamma: 100 -> 1.0. Range 0.01 to 2.0 (avoid 0)
+      materialRef.current.uniforms.uGamma.value = Math.max(0.01, gamma / 100.0)
       
-      // Vibrance: 50 -> 0.0. Range -1.0 to 1.0
-      materialRef.current.uniforms.uVibrance.value = (vibrance - 50) / 50.0
+      // Vibrance: 100 -> 0.0. Range -1.0 to 1.0
+      materialRef.current.uniforms.uVibrance.value = (vibrance - 100) / 100.0
       
       materialRef.current.uniforms.uColorMode.value = colorMode
       materialRef.current.uniforms.uTintHue.value = tintHue

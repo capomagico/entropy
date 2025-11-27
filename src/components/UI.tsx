@@ -335,11 +335,11 @@ export function LabOverlay() {
               </div>
               
               {[
-                { label: 'BRIGHT', value: brightness, setter: setBrightness, min: 1, max: 100 },
-                { label: 'CONTRAST', value: contrast, setter: setContrast, min: 1, max: 100 },
-                { label: 'GAMMA', value: gamma, setter: setGamma, min: 1, max: 100 },
-                { label: 'SATURATION', value: saturation, setter: setSaturation, min: 1, max: 100 },
-                { label: 'VIBRANCE', value: vibrance, setter: setVibrance, min: 1, max: 100 },
+                { label: 'BRIGHT', value: brightness, setter: setBrightness, min: 0, max: 200 },
+                { label: 'CONTRAST', value: contrast, setter: setContrast, min: 0, max: 200 },
+                { label: 'GAMMA', value: gamma, setter: setGamma, min: 0, max: 200 },
+                { label: 'SATURATION', value: saturation, setter: setSaturation, min: 0, max: 200 },
+                { label: 'VIBRANCE', value: vibrance, setter: setVibrance, min: 0, max: 200 },
               ].map(({ label, value, setter, min, max }) => (
                 <div key={label} className="mb-3">
                   <div className="flex justify-between mb-1">
