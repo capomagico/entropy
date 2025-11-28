@@ -621,13 +621,15 @@ const ScreenQuad = memo(function ScreenQuad() {
       gl.render(scene, cam) // Render using the export camera
       
       try {
+        console.log('[STAGE] Creating PNG blob...')
         // Convert canvas to Blob for better iOS/Safari compatibility
         gl.domElement.toBlob((blob) => {
           if (!blob) {
-            console.error('Failed to create blob')
+            console.error('[STAGE] Failed to create blob')
             return
           }
           
+          console.log('[STAGE] Blob created, size:', blob.size)
           const url = URL.createObjectURL(blob)
           const link = document.createElement('a')
           
@@ -637,18 +639,21 @@ const ScreenQuad = memo(function ScreenQuad() {
           link.download = `entropy_${timestamp}.png`
           link.href = url
           document.body.appendChild(link)
+          console.log('[STAGE] Triggering download...')
           link.click()
           document.body.removeChild(link)
           
           // Clean up the object URL after a short delay
           setTimeout(() => URL.revokeObjectURL(url), 100)
+          console.log('[STAGE] Download complete')
         }, 'image/png', 1.0)
       } catch (error) {
-        console.error('Export failed:', error)
+        console.error('[STAGE] Export failed:', error)
       }
       
       gl.setSize(currentWidth, currentHeight, false)
       setIsExporting(false)
+      console.log('[STAGE] Export process finished')
     }
   })
 

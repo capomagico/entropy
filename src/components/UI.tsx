@@ -576,7 +576,7 @@ export function LabOverlay() {
                   />
                 </div>
 
-                {/* Character Size Slider (Inverted Density) */}
+                {/* Character Size Slider - 10 discrete steps from 5px to 20px */}
                 <div className="mb-3">
                   <div className="flex justify-between mb-1">
                     <span className="font-medium uppercase text-xs">CHARACTER SIZE</span>
@@ -584,14 +584,16 @@ export function LabOverlay() {
                       <button 
                         onClick={() => {
                           pushToHistory()
-                          setAsciiDensity(120)
+                          // Default to middle size (12-13px, level 5-6)
+                          const pixelSize = 12
+                          setAsciiDensity(Math.round(1000 / pixelSize))
                         }}
                         className="text-[10px] font-bold uppercase text-[#f27200] hover:text-white"
-                        style={{ opacity: asciiDensity === 120 ? 0 : 1, pointerEvents: asciiDensity === 120 ? 'none' : 'auto' }}
+                        style={{ opacity: asciiDensity === 83 ? 0 : 1, pointerEvents: asciiDensity === 83 ? 'none' : 'auto' }}
                       >
                         RESET
                       </button>
-                      {/* Display approximate character height in pixels */}
+                      {/* Display actual character height in pixels */}
                       <span className="text-[#f27200] font-semibold text-sm w-12 text-right">
                         {Math.round(1000 / asciiDensity)}px
                       </span>
@@ -599,19 +601,33 @@ export function LabOverlay() {
                   </div>
                   <input
                     type="range"
-                    min={10}
-                    max={1500} // Limit max density (min size)
-                    step={10}
-                    // Invert value for slider: Low Density (10) = Big Size
-                    // Left = Small Size (High Density 1500)
-                    // Right = Big Size (Low Density 10)
-                    // So slider value = 1510 - density
-                    value={1510 - asciiDensity}
+                    min={1}
+                    max={10}
+                    step={1}
+                    // Map slider value (1-10) to pixel size (5-20)
+                    // pixelSize = 3 + (sliderValue * 1.67) ≈ 5 to 20
+                    // Actually simpler: pixelSize = 5 + (sliderValue - 1) * 1.67
+                    // Even simpler: array mapping
+                    value={(() => {
+                      // Map current density to slider value
+                      const pixelSize = Math.round(1000 / asciiDensity)
+                      // Pixel sizes: 5, 7, 9, 11, 13, 15, 17, 19, 20, 20
+                      // Map pixel to slider: 5->1, 7->2, 9->3, 11->4, 13->5, 15->6, 17->7, 19->8, 20->9
+                      const pixelSizes = [5, 7, 9, 11, 13, 15, 17, 19, 20, 20]
+                      const closestIndex = pixelSizes.reduce((prev, curr, idx) => 
+                        Math.abs(curr - pixelSize) < Math.abs(pixelSizes[prev] - pixelSize) ? idx : prev
+                      , 0)
+                      return closestIndex + 1
+                    })()}
                     onPointerDown={pushToHistory}
                     onChange={(e) => {
-                      const val = parseFloat(e.target.value)
-                      // Invert back: density = 1510 - val
-                      setAsciiDensity(1510 - val)
+                      const sliderValue = parseInt(e.target.value)
+                      // Map slider (1-10) to pixel sizes
+                      const pixelSizes = [5, 7, 9, 11, 13, 15, 17, 19, 20, 20]
+                      const pixelSize = pixelSizes[sliderValue - 1]
+                      // Convert pixel size to density
+                      const density = Math.round(1000 / pixelSize)
+                      setAsciiDensity(density)
                     }}
                     className="w-full h-5 appearance-none bg-[#333] border-2 border-[#333] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-[#f27200] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-black"
                   />
