@@ -20,16 +20,16 @@ uniform vec3 uColor;
 uniform float uTransparent; // 0.0 = Opaque Black, 1.0 = Transparent
 uniform float uCharCount;
 uniform vec2 uResolution;
+uniform vec2 uGridDims; // (cols, rows)
 varying vec2 vUv;
 
 void main() {
   vec2 uv = vUv;
   
   // 1. Create TRULY SQUARE cells (in pixel space)
-  // uDensity = number of columns
   float cols = uDensity;
-  float cellSizeX = uResolution.x / cols; // width of one cell in pixels
-  float rows = uResolution.y / cellSizeX;  // how many cells fit vertically (maintains square cells)
+  float cellSizeX = uResolution.x / cols;
+  float rows = uResolution.y / cellSizeX;
   
   vec2 grid = vec2(cols, rows);
   vec2 cellUv = fract(uv * grid);
@@ -39,15 +39,22 @@ void main() {
   vec3 inputColor = texture2D(uTexture, gridUv + (0.5 / grid)).rgb;
   float gray = dot(inputColor, vec3(0.299, 0.587, 0.114));
   
-  // 3. Map Luminance to Character
-  // Use exact character count from uniform
+  // 3. Map Luminance to Character Index
   float charIndex = floor(gray * (uCharCount - 0.01));
   
-  // 4. Calculate Character Texture UVs
-  float charWidth = 1.0 / uCharCount;
+  // 4. Calculate Atlas UVs
+  // Grid logic: col = index % cols, row = floor(index / cols)
+  float atlasCol = mod(charIndex, uGridDims.x);
+  float atlasRow = floor(charIndex / uGridDims.x);
+  
+  // Flip Y logic: Canvas (0,0) is Top-Left. Texture UV (0,1) is Top-Left.
+  // So Row 0 is at the TOP (high V).
+  // We need to invert the row index for UV calculation
+  float invertedRow = uGridDims.y - 1.0 - atlasRow;
+  
   vec2 charUv = vec2(
-    (cellUv.x * charWidth) + (charIndex * charWidth),
-    cellUv.y
+    (atlasCol + cellUv.x) / uGridDims.x,
+    (invertedRow + cellUv.y) / uGridDims.y
   );
   
   // 5. Sample Character Texture
@@ -96,14 +103,20 @@ export function ShaderASCII() {
     })
   }, [imageURL])
 
-  // 2. Generate Procedural Character Texture
+  // 2. Generate Procedural Character Texture (High-Res Atlas)
   useEffect(() => {
     const canvas = document.createElement('canvas')
-    // Full character set with letters, numbers, and symbols
     const chars = " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
-    const charSize = 64 // Reduced from 400 to avoid max texture size limits (64 * 69 = 4416px < 16384px)
-    const width = charSize * chars.length
-    const height = charSize
+    
+    // High resolution for crisp export (512px per char)
+    const charSize = 512 
+    
+    // Grid layout (Atlas)
+    const cols = 8
+    const rows = Math.ceil(chars.length / cols)
+    
+    const width = cols * charSize
+    const height = rows * charSize
     
     canvas.width = width
     canvas.height = height
@@ -115,29 +128,35 @@ export function ShaderASCII() {
     ctx.fillStyle = '#000000'
     ctx.fillRect(0, 0, width, height)
     
-    // White text - reduced size to prevent clipping
+    // White text
     ctx.fillStyle = '#ffffff'
     ctx.font = `bold ${charSize * 0.65}px 'Space Mono', monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     
-    // Draw characters
+    // Draw characters in grid
     for (let i = 0; i < chars.length; i++) {
       const char = chars[i]
-      const x = (i * charSize) + (charSize / 2)
-      const y = charSize / 2
+      
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      
+      const x = (col * charSize) + (charSize / 2)
+      const y = (row * charSize) + (charSize / 2)
+      
       ctx.fillText(char, x, y)
     }
     
     const tex = new THREE.CanvasTexture(canvas)
-    tex.minFilter = THREE.NearestFilter // Use Nearest for crisp pixel-perfect edges
-    tex.magFilter = THREE.NearestFilter
+    tex.minFilter = THREE.LinearFilter // Linear is better for high-res downsampling
+    tex.magFilter = THREE.LinearFilter
     tex.needsUpdate = true
     setCharTexture(tex)
     
-    // Update uniform with exact count
+    // Update uniforms
     if (materialRef.current) {
       materialRef.current.uniforms.uCharCount.value = chars.length
+      materialRef.current.uniforms.uGridDims.value.set(cols, rows)
     }
     
   }, [])
@@ -150,7 +169,8 @@ export function ShaderASCII() {
     uColor: { value: new THREE.Color(0x00ff00) },
     uTransparent: { value: 0.0 },
     uResolution: { value: new THREE.Vector2(1, 1) },
-    uCharCount: { value: 69.0 } // Default, updated by useEffect
+    uCharCount: { value: 69.0 },
+    uGridDims: { value: new THREE.Vector2(8, 9) }
   }), [])
 
   // 4. Update Loop + Export Logic
