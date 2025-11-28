@@ -177,7 +177,30 @@ export function ShaderASCII() {
       
       console.log('[SHADER_ASCII] Image dimensions:', { originalWidth, originalHeight })
       
+      // Increase resolution for export (3x or max 8192px)
+      const scaleFactor = 3
+      const maxDim = 8192
+      
+      let exportWidth = originalWidth * scaleFactor
+      let exportHeight = originalHeight * scaleFactor
+      
+      // Cap at max dimension while maintaining aspect ratio
+      if (exportWidth > maxDim || exportHeight > maxDim) {
+        const ratio = Math.min(maxDim / exportWidth, maxDim / exportHeight)
+        exportWidth *= ratio
+        exportHeight *= ratio
+      }
+      
+      exportWidth = Math.floor(exportWidth)
+      exportHeight = Math.floor(exportHeight)
+      
+      console.log('[SHADER_ASCII] Export dimensions:', { exportWidth, exportHeight })
+      
       // Configure export camera to match image dimensions exactly
+      // Note: Camera size matches the ASPECT RATIO of the render target
+      // Since we are rendering to a larger target but keeping the same aspect,
+      // the camera frustum should match the ORIGINAL image dimensions in world units
+      // to maintain the same composition/zoom level relative to the content.
       const cam = exportCameraRef.current
       cam.left = -originalWidth / 2
       cam.right = originalWidth / 2
@@ -185,12 +208,12 @@ export function ShaderASCII() {
       cam.bottom = -originalHeight / 2
       cam.updateProjectionMatrix()
       
-      // Temporarily resize canvas to original image size
+      // Temporarily resize canvas to export size
       const currentWidth = size.width
       const currentHeight = size.height
-      gl.setSize(originalWidth, originalHeight, false)
+      gl.setSize(exportWidth, exportHeight, false)
       
-      // Render at original size using export camera
+      // Render at export size using export camera
       gl.render(scene, cam)
       
       try {
