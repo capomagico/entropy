@@ -243,10 +243,10 @@ export function ShaderASCII() {
       const imgData = sourceCtx.getImageData(0, 0, cols, rows).data
       
       // 3. Create Export Canvas
-      // Target resolution: ensure high quality (e.g. 64px per char)
+      // Target resolution: 256 pixels per character (Ultra High Quality for Print)
       // Cap max width to 8192px to prevent browser crashes
       const maxDim = 8192
-      let pixelsPerChar = 64
+      let pixelsPerChar = 256
       let exportWidth = cols * pixelsPerChar
       
       if (exportWidth > maxDim) {

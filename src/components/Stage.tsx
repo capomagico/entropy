@@ -630,7 +630,27 @@ const ScreenQuad = memo(function ScreenQuad() {
       }
 
       // STANDARD PNG EXPORT (Dither / Datamosh / Terminal Raster)
-      // Configure export camera to match image dimensions exactly
+      // Apply 2x upscaling for higher quality exports (cap at 8192px)
+      const scaleFactor = 2
+      const maxDim = 8192
+      
+      let exportWidth = originalWidth * scaleFactor
+      let exportHeight = originalHeight * scaleFactor
+      
+      // Cap at max dimension while maintaining aspect ratio
+      if (exportWidth > maxDim || exportHeight > maxDim) {
+        const ratio = Math.min(maxDim / exportWidth, maxDim / exportHeight)
+        exportWidth *= ratio
+        exportHeight *= ratio
+      }
+      
+      exportWidth = Math.floor(exportWidth)
+      exportHeight = Math.floor(exportHeight)
+      
+      console.log('[STAGE] Export dimensions:', { exportWidth, exportHeight, scaleFactor })
+      
+      // Configure export camera to match ORIGINAL image dimensions (not scaled)
+      // This ensures the same crop/composition as on screen
       const cam = exportCameraRef.current
       cam.left = -originalWidth / 2
       cam.right = originalWidth / 2
@@ -638,7 +658,7 @@ const ScreenQuad = memo(function ScreenQuad() {
       cam.bottom = -originalHeight / 2
       cam.updateProjectionMatrix()
       
-      gl.setSize(originalWidth, originalHeight, false)
+      gl.setSize(exportWidth, exportHeight, false)
       gl.render(scene, cam) // Render using the export camera
       
       try {
