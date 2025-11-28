@@ -587,6 +587,20 @@ const ScreenQuad = memo(function ScreenQuad() {
       materialRef.current.uniforms.uDmSizeVariation.value = dm_size_variation
     }
 
+    // Debug logging for export
+    if (isExporting) {
+      console.log('[STAGE] isExporting is TRUE')
+      console.log('[STAGE] texture:', texture)
+      console.log('[STAGE] texture?.image:', texture?.image)
+      console.log('[STAGE] exportCameraRef.current:', exportCameraRef.current)
+      console.log('[STAGE] Condition check:', {
+        isExporting,
+        hasTexture: !!texture,
+        hasImage: !!(texture?.image),
+        hasCamera: !!exportCameraRef.current
+      })
+    }
+
     if (isExporting && texture && texture.image && exportCameraRef.current) {
       console.log('[STAGE] Export triggered')
       console.log('[STAGE] currentTool:', currentTool)
