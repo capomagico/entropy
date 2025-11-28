@@ -439,6 +439,10 @@ const ScreenQuad = memo(function ScreenQuad() {
   const dm_color_noise = useStore((state) => state.dm_color_noise)
   const dm_seed = useStore((state) => state.dm_seed)
   const dm_size_variation = useStore((state) => state.dm_size_variation)
+  
+  const asciiDensity = useStore((state) => state.asciiDensity)
+  const asciiColor = useStore((state) => state.asciiColor)
+  
   const isExporting = useStore((state) => state.isExporting)
   const setIsExporting = useStore((state) => state.setIsExporting)
   
@@ -591,6 +595,86 @@ const ScreenQuad = memo(function ScreenQuad() {
       const currentWidth = state.size.width
       const currentHeight = state.size.height
       
+      // TERMINAL SVG EXPORT
+      if (currentTool === 'TERMINAL') {
+         // Create a canvas to read pixel data
+         const canvas = document.createElement('canvas')
+         canvas.width = originalWidth
+         canvas.height = originalHeight
+         const ctx = canvas.getContext('2d')
+         if (ctx) {
+           ctx.drawImage(img, 0, 0, originalWidth, originalHeight)
+           const imageData = ctx.getImageData(0, 0, originalWidth, originalHeight).data
+           
+           // Calculate grid
+           // We need to match the shader logic:
+           // grid = vec2(uDensity, uDensity * (aspect))
+           const aspect = originalHeight / originalWidth
+           const cols = asciiDensity
+           const rows = Math.floor(asciiDensity * aspect)
+           const cellWidth = originalWidth / cols
+           const cellHeight = originalHeight / rows
+           
+           const chars = " .:-=+*#%@"
+           let svgContent = `<svg width="${originalWidth}" height="${originalHeight}" viewBox="0 0 ${originalWidth} ${originalHeight}" xmlns="http://www.w3.org/2000/svg" style="background-color: black">`
+           svgContent += `<rect width="100%" height="100%" fill="black" />`
+           
+           // Font size needs to match cell height roughly
+           // Use monospace font
+           const fontSize = cellHeight * 1.2 // Slight overlap for density
+           
+           // Group text elements by color to optimize size? 
+           // Or just one group with fill color.
+           svgContent += `<g fill="${asciiColor}" font-family="monospace" font-weight="bold" font-size="${fontSize}px" text-anchor="middle" dominant-baseline="middle">`
+           
+           for (let y = 0; y < rows; y++) {
+             for (let x = 0; x < cols; x++) {
+               // Sample center of cell
+               const px = Math.floor((x + 0.5) * cellWidth)
+               const py = Math.floor((y + 0.5) * cellHeight)
+               
+               const i = (py * originalWidth + px) * 4
+               const r = imageData[i]
+               const g = imageData[i + 1]
+               const b = imageData[i + 2]
+               
+               // Luminance
+               const gray = (r * 0.299 + g * 0.587 + b * 0.114) / 255
+               const charIndex = Math.floor(gray * 9.99)
+               const char = chars[charIndex]
+               
+               if (char !== ' ') {
+                 // SVG text position
+                 const svgX = (x + 0.5) * cellWidth
+                 const svgY = (y + 0.5) * cellHeight
+                 // Escape special chars if needed
+                 const safeChar = char === '<' ? '&lt;' : char === '>' ? '&gt;' : char === '&' ? '&amp;' : char
+                 svgContent += `<text x="${svgX.toFixed(1)}" y="${svgY.toFixed(1)}">${safeChar}</text>`
+               }
+             }
+           }
+           
+           svgContent += `</g></svg>`
+           
+           // Download SVG
+           const blob = new Blob([svgContent], { type: 'image/svg+xml' })
+           const url = URL.createObjectURL(blob)
+           const link = document.createElement('a')
+           const now = new Date()
+           const timestamp = now.getTime().toString().slice(-6)
+           link.download = `entropy_terminal_${timestamp}.svg`
+           link.href = url
+           document.body.appendChild(link)
+           link.click()
+           document.body.removeChild(link)
+           setTimeout(() => URL.revokeObjectURL(url), 100)
+         }
+         
+         setIsExporting(false)
+         return // Skip standard PNG export
+      }
+
+      // STANDARD PNG EXPORT (Dither / Datamosh)
       // Configure export camera to match image dimensions exactly
       const cam = exportCameraRef.current
       cam.left = -originalWidth / 2

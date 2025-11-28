@@ -544,50 +544,66 @@ export function LabOverlay() {
             
             {/* TERMINAL CONTROLS */}
             {currentTool === 'TERMINAL' && (
-              <div className="border-2 border-[#f27200] p-3 bg-[#00ff00] text-black mt-4">
-                <div className="text-base font-semibold mb-3 uppercase tracking-wide border-b-2 border-black pb-2">
+              <div className="border-2 border-[#f27200] p-3 bg-black text-white mt-4">
+                <div className="text-base font-semibold mb-3 uppercase tracking-wide border-b-2 border-[#f27200] pb-2">
                   TERMINAL
                 </div>
                 
-                {/* Color Picker */}
-                <div className="mb-3">
-                  <div className="flex justify-between mb-1">
-                    <label className="text-sm font-bold">COLOR</label>
-                    <input 
-                      type="color" 
-                      value={asciiColor}
-                      onChange={(e) => setAsciiColor(e.target.value)}
-                      className="w-6 h-6 p-0 border-0"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    {['#00ff00', '#ffb000', '#ffffff', '#ff0000', '#00ffff'].map(c => (
-                      <button
-                        key={c}
-                        onClick={() => setAsciiColor(c)}
-                        className="w-6 h-6 border-2 border-black"
-                        style={{ backgroundColor: c }}
+                {/* Color Controls */}
+                <div className="mb-4">
+                  <div className="flex justify-between mb-1.5">
+                    <span className="font-medium uppercase text-xs">COLOR</span>
+                    <div className="flex items-center gap-2">
+                       <input 
+                        type="text" 
+                        value={asciiColor}
+                        onChange={(e) => setAsciiColor(e.target.value)}
+                        className="w-20 bg-black border border-[#f27200] text-[#f27200] text-xs p-1 font-mono uppercase text-center focus:outline-none"
                       />
-                    ))}
+                      <div className="w-6 h-6 border-2 border-[#f27200]" style={{ backgroundColor: asciiColor }} />
+                    </div>
                   </div>
+                  
+                  {/* Hue Slider for quick color selection */}
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="1"
+                    defaultValue="120" // Default green-ish
+                    onChange={(e) => {
+                      const hue = parseInt(e.target.value)
+                      const color = `hsl(${hue}, 100%, 50%)`
+                      // Convert HSL to Hex for consistency if needed, or just use HSL string
+                      // Let's use a helper or just set HSL string which CSS/Canvas supports
+                      // But for Hex input sync, we might want hex.
+                      // For simplicity, let's use the hueToRGB helper from UI component if available or inline it.
+                      // Actually, let's just use HSL string for now, it works in Canvas/CSS.
+                      setAsciiColor(color)
+                    }}
+                    className="w-full h-4 appearance-none bg-gradient-to-r from-red-500 via-green-500 to-blue-500 border-2 border-[#333] mb-2 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-black"
+                  />
                 </div>
 
-                {/* Density Slider */}
+                {/* Character Size Slider (Inverted Density) */}
                 <div className="mb-3">
                   <div className="flex justify-between mb-1">
-                    <span className="font-medium uppercase text-xs">DENSITY</span>
+                    <span className="font-medium uppercase text-xs">CHAR SIZE</span>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => {
                           pushToHistory()
                           setAsciiDensity(120)
                         }}
-                        className="text-[10px] font-bold uppercase text-black hover:text-white"
+                        className="text-[10px] font-bold uppercase text-[#f27200] hover:text-white"
                         style={{ opacity: asciiDensity === 120 ? 0 : 1, pointerEvents: asciiDensity === 120 ? 'none' : 'auto' }}
                       >
                         RESET
                       </button>
-                      <span className="text-black font-semibold text-sm w-8 text-right">{asciiDensity.toFixed(0)}</span>
+                      {/* Display a "Size" value instead of raw density */}
+                      <span className="text-[#f27200] font-semibold text-sm w-8 text-right">
+                        {Math.round((2500 - asciiDensity) / 25)}%
+                      </span>
                     </div>
                   </div>
                   <input
@@ -595,10 +611,19 @@ export function LabOverlay() {
                     min={10}
                     max={2500}
                     step={10}
-                    value={asciiDensity}
+                    // Invert value for slider: Low Density (10) = Big Size (Right side of slider?)
+                    // User wants "Size" slider.
+                    // Left = Small Size (High Density 2500)
+                    // Right = Big Size (Low Density 10)
+                    // So slider value = 2510 - density
+                    value={2510 - asciiDensity}
                     onPointerDown={pushToHistory}
-                    onChange={(e) => setAsciiDensity(parseFloat(e.target.value))}
-                    className="w-full h-5 appearance-none bg-black border-2 border-black [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-black"
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value)
+                      // Invert back: density = 2510 - val
+                      setAsciiDensity(2510 - val)
+                    }}
+                    className="w-full h-5 appearance-none bg-[#333] border-2 border-[#333] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-[#f27200] [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-black"
                   />
                 </div>
               </div>
