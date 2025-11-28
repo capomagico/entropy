@@ -69,6 +69,8 @@ Rendering is performed using a single full-screen quad (`ScreenQuad`) with a cus
   - **Density:** Adjust the percentage of the image affected by the distortion.
   - **Edge Blur:** Soften the edges of the blocks for a liquid/melting effect.
   - **Color Shift:** Invert colors of displaced blocks for a "corrupted file" aesthetic.
+  - **Seed:** Randomize the noise pattern with a text seed.
+  - **Size Variation:** Deform the grid to create irregular, non-uniform block sizes.
 - **Palette System:** Custom 4-color palettes + Presets.
 - **State Persistence:** Reloading the page retains your settings and tool position.
 - **History:** Robust Undo/Redo system for all parameters.
