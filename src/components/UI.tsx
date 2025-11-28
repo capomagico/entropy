@@ -207,17 +207,17 @@ export function LabOverlay() {
             </button>
             
             <button 
-              disabled
-              className="w-full bg-black text-white/30 text-lg md:text-xl font-bold py-3 md:py-4 border-2 border-white/30 cursor-not-allowed uppercase tracking-wider"
-            >
-              GLITCH [COMING SOON]
-            </button>
-            
-            <button 
               onClick={() => setCurrentTool('DATAMOSH')}
               className="w-full bg-white text-black text-lg md:text-xl font-bold py-3 md:py-4 hover:bg-[#f27200] hover:text-white border-2 border-black uppercase tracking-wider"
             >
               DATAMOSH
+            </button>
+            
+            <button 
+              disabled
+              className="w-full bg-black text-white/30 text-lg md:text-xl font-bold py-3 md:py-4 border-2 border-white/30 cursor-not-allowed uppercase tracking-wider"
+            >
+              GLITCH [COMING SOON]
             </button>
           </div>
           
