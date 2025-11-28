@@ -175,7 +175,7 @@ export function ShaderASCII() {
   }), [])
 
   // 4. Update Loop + Export Logic
-  useFrame(({ gl, scene }) => {
+  useFrame(() => {
     if (materialRef.current) {
       materialRef.current.uniforms.uTexture.value = texture
       materialRef.current.uniforms.uCharTexture.value = charTexture
@@ -187,102 +187,103 @@ export function ShaderASCII() {
     }
     
     // EXPORT LOGIC
-    if (isExporting && texture && texture.image && exportCameraRef.current) {
-      console.log('[SHADER_ASCII] Export triggered!')
-      console.log('[SHADER_ASCII] texture:', texture)
-      console.log('[SHADER_ASCII] texture.image:', texture.image)
+    if (isExporting && texture && texture.image) {
+      console.log('[SHADER_ASCII] Export triggered (Native Canvas Mode)!')
       
       const img = texture.image as HTMLImageElement
       const originalWidth = img.width
       const originalHeight = img.height
-      
-      console.log('[SHADER_ASCII] Image dimensions:', { originalWidth, originalHeight })
-      
-      // Calculate export dimensions based on DENSITY to ensure character sharpness
-      // We want each character to have enough pixels to look crisp.
-      // Target: 128 pixels per character width (Ultra High Quality)
-      const pixelsPerChar = 128
-      const targetWidth = asciiDensity * pixelsPerChar
-      
-      // Calculate height based on aspect ratio
       const aspect = originalHeight / originalWidth
-      const targetHeight = targetWidth * aspect
       
-      const maxDim = 8192 // Max texture size for most devices
+      // 1. Calculate Grid Dimensions
+      const cols = asciiDensity
+      const rows = Math.round(cols * aspect)
       
-      let exportWidth = targetWidth
-      let exportHeight = targetHeight
+      // 2. Create Source Canvas (for sampling pixel data)
+      const sourceCanvas = document.createElement('canvas')
+      sourceCanvas.width = cols
+      sourceCanvas.height = rows
+      const sourceCtx = sourceCanvas.getContext('2d')
+      if (!sourceCtx) return
       
-      // Cap at max dimension while maintaining aspect ratio
-      if (exportWidth > maxDim || exportHeight > maxDim) {
-        const ratio = Math.min(maxDim / exportWidth, maxDim / exportHeight)
-        exportWidth *= ratio
-        exportHeight *= ratio
+      // Draw image scaled down to grid size (one pixel per character)
+      sourceCtx.drawImage(img, 0, 0, cols, rows)
+      const imgData = sourceCtx.getImageData(0, 0, cols, rows).data
+      
+      // 3. Create Export Canvas
+      // Target resolution: ensure high quality (e.g. 64px per char)
+      // Cap max width to 8192px to prevent browser crashes
+      const maxDim = 8192
+      let pixelsPerChar = 64
+      let exportWidth = cols * pixelsPerChar
+      
+      if (exportWidth > maxDim) {
+        exportWidth = maxDim
+        pixelsPerChar = exportWidth / cols
       }
       
-      exportWidth = Math.floor(exportWidth)
-      exportHeight = Math.floor(exportHeight)
+      const exportHeight = rows * pixelsPerChar
       
-      console.log('[SHADER_ASCII] Export dimensions:', { exportWidth, exportHeight, density: asciiDensity })
+      const exportCanvas = document.createElement('canvas')
+      exportCanvas.width = exportWidth
+      exportCanvas.height = exportHeight
+      const ctx = exportCanvas.getContext('2d')
+      if (!ctx) return
       
-      // Configure export camera to match image dimensions exactly
-      // Note: Camera size matches the ASPECT RATIO of the render target
-      // Since we are rendering to a larger target but keeping the same aspect,
-      // the camera frustum should match the ORIGINAL image dimensions in world units
-      // to maintain the same composition/zoom level relative to the content.
-      const cam = exportCameraRef.current
-      cam.left = -originalWidth / 2
-      cam.right = originalWidth / 2
-      cam.top = originalHeight / 2
-      cam.bottom = -originalHeight / 2
-      cam.updateProjectionMatrix()
+      // 4. Render Characters
+      // Clear with transparency
+      ctx.clearRect(0, 0, exportWidth, exportHeight)
       
-      // Temporarily resize canvas to export size
-      const currentWidth = size.width
-      const currentHeight = size.height
-      gl.setSize(exportWidth, exportHeight, false)
+      // Setup Font
+      // Use a slightly smaller font size (0.65x) to match the look on screen and prevent clipping
+      const fontSize = pixelsPerChar * 0.65
+      ctx.font = `bold ${fontSize}px 'Space Mono', monospace`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = asciiColor // Use the selected color
       
-      // CRITICAL: Update shader resolution uniform to match export size!
-      if (materialRef.current) {
-        materialRef.current.uniforms.uResolution.value.set(exportWidth, exportHeight)
+      const chars = " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+      
+      console.log('[SHADER_ASCII] Rendering to canvas...', { cols, rows, exportWidth, exportHeight })
+      
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const i = (y * cols + x) * 4
+          const r = imgData[i]
+          const g = imgData[i + 1]
+          const b = imgData[i + 2]
+          // const a = imgData[i + 3] // Ignore alpha for now, assume opaque image
+          
+          // Calculate Luminance
+          const gray = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+          
+          // Map to Character
+          const charIndex = Math.floor(gray * (chars.length - 0.01))
+          const char = chars[charIndex]
+          
+          // Draw Character
+          const posX = (x * pixelsPerChar) + (pixelsPerChar / 2)
+          const posY = (y * pixelsPerChar) + (pixelsPerChar / 2)
+          
+          ctx.fillText(char, posX, posY)
+        }
       }
       
-      // Render at export size using export camera
-      gl.render(scene, cam)
+      // 5. Download
+      exportCanvas.toBlob((blob) => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `entropy_ascii_${Date.now()}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        console.log('[SHADER_ASCII] Download complete')
+      }, 'image/png')
       
-      try {
-        console.log('[SHADER_ASCII] Creating PNG blob...')
-        gl.domElement.toBlob((blob) => {
-          if (!blob) {
-            console.error('[SHADER_ASCII] Failed to create blob')
-            return
-         }
-          
-          console.log('[SHADER_ASCII] Blob created, size:', blob.size)
-          const url = URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          
-          const now = new Date()
-          const timestamp = now.getTime().toString().slice(-6)
-          
-          link.download = `entropy_terminal_${timestamp}.png`
-          link.href = url
-          document.body.appendChild(link)
-          console.log('[SHADER_ASCII] Triggering download...')
-          link.click()
-          document.body.removeChild(link)
-          
-          setTimeout(() => URL.revokeObjectURL(url), 100)
-          console.log('[SHADER_ASCII] Download complete')
-        }, 'image/png', 1.0)
-      } catch (error) {
-        console.error('[SHADER_ASCII] Export failed:', error)
-      }
-      
-      // Restore canvas size
-      gl.setSize(currentWidth, currentHeight, false)
       setIsExporting(false)
-      console.log('[SHADER_ASCII] Export process finished')
     }
   })
   
