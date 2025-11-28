@@ -82,7 +82,6 @@ export function ShaderASCII() {
   const imageURL = useStore((state) => state.imageURL)
   const asciiDensity = useStore((state) => state.asciiDensity)
   const asciiColor = useStore((state) => state.asciiColor)
-  const asciiCharSet = useStore((state) => state.asciiCharSet)
   const isExporting = useStore((state) => state.isExporting)
   const setIsExporting = useStore((state) => state.setIsExporting)
   
@@ -103,11 +102,8 @@ export function ShaderASCII() {
   // 2. Generate Procedural Character Texture
   useEffect(() => {
     const canvas = document.createElement('canvas')
-    // Select character set based on toggle
-    const chars = asciiCharSet === 'alphanumeric'
-      ? " .,il1IrjtfLcvuxznsCJUYXQ0O8ZmwpbdhkaoMW*"  // 43 characters
-      : " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"  // 70 characters
-    
+    // Full character set with letters, numbers, and symbols
+    const chars = " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
     const charSize = 400
     const width = charSize * chars.length
     const height = charSize
@@ -142,7 +138,7 @@ export function ShaderASCII() {
     tex.needsUpdate = true
     setCharTexture(tex)
     
-  }, [asciiCharSet])
+  }, [])
 
   // 3. Uniforms
   const uniforms = useMemo(() => ({
