@@ -71,6 +71,7 @@ export function ShaderASCII() {
   const materialRef = useRef<THREE.ShaderMaterial>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const controlsRef = useRef<any>(null)
+  const exportCameraRef = useRef<THREE.OrthographicCamera>(null)
   const { size, camera } = useThree()
   
   const imageURL = useStore((state) => state.imageURL)
@@ -145,7 +146,7 @@ export function ShaderASCII() {
   }), [])
 
   // 4. Update Loop + Export Logic
-  useFrame(({ gl, scene, camera: frameCamera }) => {
+  useFrame(({ gl, scene }) => {
     if (materialRef.current) {
       materialRef.current.uniforms.uTexture.value = texture
       materialRef.current.uniforms.uCharTexture.value = charTexture
@@ -157,7 +158,7 @@ export function ShaderASCII() {
     }
     
     // EXPORT LOGIC
-    if (isExporting && texture && texture.image) {
+    if (isExporting && texture && texture.image && exportCameraRef.current) {
       console.log('[SHADER_ASCII] Export triggered!')
       console.log('[SHADER_ASCII] texture:', texture)
       console.log('[SHADER_ASCII] texture.image:', texture.image)
@@ -168,13 +169,21 @@ export function ShaderASCII() {
       
       console.log('[SHADER_ASCII] Image dimensions:', { originalWidth, originalHeight })
       
+      // Configure export camera to match image dimensions exactly
+      const cam = exportCameraRef.current
+      cam.left = -originalWidth / 2
+      cam.right = originalWidth / 2
+      cam.top = originalHeight / 2
+      cam.bottom = -originalHeight / 2
+      cam.updateProjectionMatrix()
+      
       // Temporarily resize canvas to original image size
       const currentWidth = size.width
       const currentHeight = size.height
       gl.setSize(originalWidth, originalHeight, false)
       
-      // Render at original size
-      gl.render(scene, frameCamera)
+      // Render at original size using export camera
+      gl.render(scene, cam)
       
       try {
         console.log('[SHADER_ASCII] Creating PNG blob...')
@@ -245,6 +254,15 @@ export function ShaderASCII() {
       <OrthographicCamera 
         makeDefault 
         position={[0, 0, 10]} 
+        zoom={1}
+        near={0.1}
+        far={1000}
+      />
+      
+      {/* Dedicated camera for export - matches image dimensions exactly */}
+      <OrthographicCamera
+        ref={exportCameraRef}
+        position={[0, 0, 10]}
         zoom={1}
         near={0.1}
         far={1000}
