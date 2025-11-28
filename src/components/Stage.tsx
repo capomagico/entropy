@@ -450,6 +450,7 @@ const ScreenQuad = memo(function ScreenQuad() {
   const exportCameraRef = useRef<THREE.OrthographicCamera>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const controlsRef = useRef<any>(null)
+  const lastFittedTextureRef = useRef<string | null>(null)
 
   useEffect(() => {
     // Reset texture when imageURL changes
@@ -467,34 +468,40 @@ const ScreenQuad = memo(function ScreenQuad() {
         loadedTexture.wrapT = THREE.ClampToEdgeWrapping
         loadedTexture.needsUpdate = true
         setTexture(loadedTexture)
-        
-        // FIT TO SCREEN LOGIC - Contain entire image (fit both width AND height)
-        const img = loadedTexture.image
-        if (img && controlsRef.current && camera) {
-           const padding = 0.9 // Keep 90% of screen filled
-           
-           // Calculate zoom for both width and height, use the SMALLER one to ensure entire image fits
-           const zoomWidth = (size.width * padding) / img.width
-           const zoomHeight = (size.height * padding) / img.height
-           const newZoom = Math.min(zoomWidth, zoomHeight)
-           
-           // Update camera zoom
-           const orthoCam = camera as THREE.OrthographicCamera
-           orthoCam.zoom = newZoom
-           orthoCam.updateProjectionMatrix()
-           
-           // Set minZoom to prevent zooming out below fit-to-screen (prevents glitchy bands)
-           if (controlsRef.current) {
-             controlsRef.current.minZoom = newZoom * 0.9 // Allow slight zoom out but not too much
-             controlsRef.current.reset()
-             controlsRef.current.object.zoom = newZoom
-             controlsRef.current.object.updateProjectionMatrix()
-           }
-        }
       }
     })
     return () => { isMounted = false }
-  }, [imageURL, camera, size])
+  }, [imageURL])
+  
+  // Separate useEffect for fit-to-screen logic
+  useEffect(() => {
+    if (texture && texture.image && controlsRef.current && camera) {
+       // Only fit if this is a new texture
+       if (lastFittedTextureRef.current === texture.uuid) return
+       
+       lastFittedTextureRef.current = texture.uuid
+       
+       const img = texture.image as HTMLImageElement
+       // Use 0.95 padding to fit perfectly with small margin
+       const padding = 0.95
+       const zoomWidth = (size.width * padding) / img.width
+       const zoomHeight = (size.height * padding) / img.height
+       const newZoom = Math.min(zoomWidth, zoomHeight)
+       
+       const orthoCam = camera as THREE.OrthographicCamera
+       // eslint-disable-next-line
+       orthoCam.zoom = newZoom
+       orthoCam.updateProjectionMatrix()
+       
+       if (controlsRef.current) {
+         // Allow zooming out significantly to see the whole canvas if needed
+         controlsRef.current.minZoom = Math.min(newZoom * 0.5, 0.1)
+         controlsRef.current.reset()
+         controlsRef.current.object.zoom = newZoom
+         controlsRef.current.object.updateProjectionMatrix()
+       }
+    }
+  }, [texture, size, camera])
 
   const paletteUniform = useMemo(() => {
     return paletteColors.map(hex => {
