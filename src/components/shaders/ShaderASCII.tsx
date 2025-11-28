@@ -197,12 +197,20 @@ export function ShaderASCII() {
       
       console.log('[SHADER_ASCII] Image dimensions:', { originalWidth, originalHeight })
       
-      // Increase resolution for export (3x or max 8192px)
-      const scaleFactor = 3
-      const maxDim = 8192
+      // Calculate export dimensions based on DENSITY to ensure character sharpness
+      // We want each character to have enough pixels to look crisp.
+      // Target: 64 pixels per character width (high quality)
+      const pixelsPerChar = 64
+      const targetWidth = asciiDensity * pixelsPerChar
       
-      let exportWidth = originalWidth * scaleFactor
-      let exportHeight = originalHeight * scaleFactor
+      // Calculate height based on aspect ratio
+      const aspect = originalHeight / originalWidth
+      const targetHeight = targetWidth * aspect
+      
+      const maxDim = 8192 // Max texture size for most devices
+      
+      let exportWidth = targetWidth
+      let exportHeight = targetHeight
       
       // Cap at max dimension while maintaining aspect ratio
       if (exportWidth > maxDim || exportHeight > maxDim) {
@@ -214,7 +222,7 @@ export function ShaderASCII() {
       exportWidth = Math.floor(exportWidth)
       exportHeight = Math.floor(exportHeight)
       
-      console.log('[SHADER_ASCII] Export dimensions:', { exportWidth, exportHeight })
+      console.log('[SHADER_ASCII] Export dimensions:', { exportWidth, exportHeight, density: asciiDensity })
       
       // Configure export camera to match image dimensions exactly
       // Note: Camera size matches the ASPECT RATIO of the render target
