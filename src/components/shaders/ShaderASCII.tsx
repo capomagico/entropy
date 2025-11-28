@@ -76,7 +76,6 @@ export function ShaderASCII() {
   const imageURL = useStore((state) => state.imageURL)
   const asciiDensity = useStore((state) => state.asciiDensity)
   const asciiColor = useStore((state) => state.asciiColor)
-  const exportFormat = useStore((state) => state.exportFormat)
   
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const [charTexture, setCharTexture] = useState<THREE.Texture | null>(null)
@@ -150,8 +149,8 @@ export function ShaderASCII() {
       materialRef.current.uniforms.uCharTexture.value = charTexture
       materialRef.current.uniforms.uDensity.value = asciiDensity
       materialRef.current.uniforms.uColor.value.set(asciiColor)
-      // If exporting as PNG_TRANSPARENT, set uTransparent to 1.0
-      materialRef.current.uniforms.uTransparent.value = exportFormat === 'PNG_TRANSPARENT' ? 1.0 : 0.0
+      // Always use transparency for Terminal (export will always be transparent PNG)
+      materialRef.current.uniforms.uTransparent.value = 1.0
       materialRef.current.uniforms.uResolution.value.set(size.width, size.height)
     }
   })
