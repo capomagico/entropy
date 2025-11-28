@@ -77,6 +77,7 @@ export function ShaderASCII() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const controlsRef = useRef<any>(null)
   const exportCameraRef = useRef<THREE.OrthographicCamera>(null)
+  const lastFittedTextureRef = useRef<string | null>(null)
   const { size, camera } = useThree()
   
   const imageURL = useStore((state) => state.imageURL)
@@ -229,6 +230,11 @@ export function ShaderASCII() {
   // Fit to screen logic
   useEffect(() => {
     if (texture && texture.image && controlsRef.current && camera) {
+       // Only fit if this is a new texture
+       if (lastFittedTextureRef.current === texture.uuid) return
+       
+       lastFittedTextureRef.current = texture.uuid
+       
        const img = texture.image as HTMLImageElement
        const padding = 0.9
        const zoomWidth = (size.width * padding) / img.width
