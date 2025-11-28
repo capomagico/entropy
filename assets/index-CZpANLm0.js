@@ -3976,6 +3976,8 @@ uniform float uDensity;
 uniform vec3 uColor;
 uniform float uTransparent; // 0.0 = Opaque Black, 1.0 = Transparent
 uniform float uCharCount;
+uniform vec2 uResolution;
+varying vec2 vUv;
 
 void main() {
   vec2 uv = vUv;
