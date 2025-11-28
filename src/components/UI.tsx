@@ -464,7 +464,7 @@ export function LabOverlay() {
                 {[
                   { label: 'STRENGTH', value: dm_strength, setter: setDmStrength, min: 0, max: 1, step: 0.01, def: 0.5 },
                   { label: 'BLOCK SIZE', value: dm_scale, setter: setDmScale, min: 0.01, max: 5, step: 0.01, def: 1.0 },
-                  { label: 'CONTRAST', value: dm_contrast, setter: setDmContrast, min: 1.0, max: 20.0, step: 0.1, def: 1.0 },
+                  { label: 'DENSITY', value: dm_contrast, setter: setDmContrast, min: 0.0, max: 1.0, step: 0.01, def: 1.0 },
                   { label: 'EDGE BLUR', value: dm_edge_blur, setter: setDmEdgeBlur, min: 0, max: 1, step: 0.01, def: 0.0 },
                   { label: 'COLOR SHIFT', value: dm_color_noise, setter: setDmColorNoise, min: 0, max: 1, step: 0.01, def: 0.0 },
                 ].map(({ label, value, setter, min, max, step, def }) => (

@@ -297,58 +297,69 @@ void main() {
 
   vec2 blockUv = floor(uv * blocks) / blocks;
   
-  // EDGE BLUR: Mix between stepped blockUv and smooth uv
-  // uDmEdgeBlur 0.0 -> Hard blocks
-  // uDmEdgeBlur 1.0 -> Smooth distortion (Liquid)
-  vec2 noiseUv = mix(blockUv, uv, uDmEdgeBlur);
+  // EDGE BLUR: Mix between stepped (Blocky) and smooth (Liquid) displacement
+  // We calculate two noise values: one based on blocks, one continuous.
   
-  // Generate noise for displacement
-  // CONTRAST: User wants "Inverted" logic relative to previous.
-  // Previous: (n-0.5)*C + 0.5. High C = Sharp.
-  // User says "Still inverted". So High Slider should mean Sharp?
-  // If they say "Inverted", maybe they want High Slider = Soft?
-  // Let's try to map Slider (1..20) to (0.05..1.0) for the multiplier?
-  // Or maybe they want the slider to control the THRESHOLD of the noise?
-  // Let's try a different approach:
-  // High Contrast = More extreme values (0 or 1).
-  // Low Contrast = More middle values (0.5).
-  // I will use a power curve again but inverted?
-  // Let's try: n = (n - 0.5) * uDmContrast + 0.5;
-  // But I will flip the slider in UI to be intuitive.
-  // Wait, if I use the noiseUv (which might be smooth), the contrast will sharpen the edges.
+  // 1. Stepped Noise (Blocky)
+  vec2 noiseUvStepped = blockUv * 5.0;
+  float nStepped = noise(noiseUvStepped);
   
-  float n = noise(noiseUv * 5.0);
+  // 2. Smooth Noise (Liquid)
+  vec2 noiseUvSmooth = uv * 5.0; // Use original UVs but scaled same as blocks? 
+  // Actually, to match the scale, we should use uv * blocks? 
+  // But blocks depends on scale. Let's try to keep frequency similar.
+  // If we use uv * blocks, it will be high frequency if blocks is high.
+  // Let's mix the COORDINATES first, that's cheaper and usually cleaner.
+  // But user said "edge blur non funziona bene".
+  // Let's try mixing the RESULTING DISPLACEMENT.
   
-  // Apply Contrast
-  // If uDmContrast is high, we want hard edges.
-  n = (n - 0.5) * uDmContrast + 0.5;
-  n = clamp(n, 0.0, 1.0);
+  // DENSITY (formerly Contrast): Percentage of image affected.
+  // uDmContrast is now 0.0 to 1.0.
+  // We use it as a threshold.
+  // We want to create a mask.
+  float maskNoise = noise(blockUv * 3.14 + 10.0); // Different seed
+  // If uDmContrast is 1.0, we want ALL blocks. step(0.0, mask) -> 1.
+  // If uDmContrast is 0.0, we want NO blocks. step(1.0, mask) -> 0.
+  // Threshold = 1.0 - uDmContrast.
+  float densityThreshold = 1.0 - uDmContrast;
+  float densityMask = step(densityThreshold, maskNoise);
   
-  // Calculate displacement vector
-  vec2 displacement = vec2(
+  // Calculate Displacement Vectors
+  // Stepped (Hard Blocks)
+  vec2 dispStepped = vec2(
     (random(blockUv) - 0.5) * 2.0,
     (random(blockUv + 100.0) - 0.5) * 2.0
   );
   
-  // Apply displacement
-  // Use 'n' to modulate strength.
-  // If n is binary (0 or 1), displacement is On or Off.
-  vec2 displacedUv = uv + displacement * uDmStrength * n * 0.1;
+  // Smooth (Liquid/Melting) - Use Value Noise for smooth transitions
+  // We need a smooth random vector field.
+  vec2 dispSmooth = vec2(
+    (noise(uv * blocks) - 0.5) * 2.0,
+    (noise(uv * blocks + 100.0) - 0.5) * 2.0
+  );
   
-  // Sample texture with displaced UVs
+  // Mix based on Edge Blur
+  vec2 finalDisp = mix(dispStepped, dispSmooth, uDmEdgeBlur);
+  
+  // Apply Density Mask (only to displacement strength)
+  // We can smooth the mask too if Edge Blur is high?
+  // Maybe keep mask sharp for "Datamosh" feel, or let it be part of the chaos.
+  // Let's keep it sharp for now, as datamosh is usually glitchy.
+  
+  // Apply displacement
+  vec2 displacedUv = uv + finalDisp * uDmStrength * densityMask * 0.1;
+  
+  // Sample texture
   vec4 color = texture2D(uTexture, displacedUv);
   
-  // Add some digital artifacts/noise
-  float artifact = random(uv * 100.0) * uDmStrength * 0.1;
+  // Add artifacts
+  float artifact = random(uv * 100.0) * uDmStrength * 0.1 * densityMask;
   color.rgb += artifact;
   
   // COLOR INVERSION / SHIFT
-  // Apply ONLY to displaced blocks.
-  // Check if displacement is significant (n > 0.1)
-  // And check random chance.
-  if (n > 0.1) {
+  // Apply only where mask is active
+  if (densityMask > 0.5) {
     float blockRandom = random(blockUv + 50.0);
-    // uDmColorNoise is the percentage (0.0 to 1.0)
     if (blockRandom < uDmColorNoise) {
       color.rgb = 1.0 - color.rgb;
     }
